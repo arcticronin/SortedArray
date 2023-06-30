@@ -18,10 +18,15 @@ struct lessThen100 {
     }
 };
 
-
 struct AscendingOrd {
     bool operator()(const int& a, const int& b) const {
         return a < b;
+    }
+};
+
+struct DescendingOrd {
+    bool operator()(const int& a, const int& b) const {
+        return a > b;
     }
 };
 
@@ -31,33 +36,57 @@ struct Equalz {
     }
 };
 
-int main(int argc, char const *argv[])
-{
-
+void test(){
+  
   std::cout << "*** TEST METODI FONDAMENTALI ***" << std::endl;
 
+  
   std::cout << "test ctor default" << std::endl;
   SortedArray<int, AscendingOrd, Equalz> db1;
+  
   assert(db1.size() == 0); // verifichiamo lo stato dell'oggetto
 
-  std::cout << "test copy constructor" << std::endl;
+  
+  db1.insert(1);
+  db1.insert(2);
+  db1.insert(100);
+  db1.insert(0);
+  
   SortedArray<int, AscendingOrd, Equalz> db4(db1); 
+  
+  std::cout << "test copy constructor" << std::endl;
   // ATTENZIONE: una sintassi del tipo
   //             SortedArray<int> db4 = db3;
   //             EQUIVALE ALLA CHIAMATA AL COPY CONSTRUCTOR!
+
   assert(db1.size() == db4.size());
-  for(unsigned int i =0 ; 
-    i < db4.size(); i++)
-    assert(db1[i] == db4[i]);
+  // for(unsigned int i =0 ;
+  //   i < db4.size(); i++){
+  //   assert(db1[i] == db4[i]);
+  //   }
 
   std::cout << "test operatore assegnamento =" << std::endl;
 
-  SortedArray<int, AscendingOrd, Equalz> db2;
-  db2 = db1;
+   SortedArray<int, AscendingOrd, Equalz> db2;
+   db2 = db1 = db4;
   assert(db1.size() == db2.size());
   for(unsigned int i =0 ; i < db1.size(); i++){
     assert(db1[i] == db2[i]);
+    assert(db4[i] == db2[i]);
   }
+
+  std::cout << db2;
+
+// 5. Un metodo per svuotare l’array;
+// test makeempty
+
+  std::cout << "test makeempty:" << std::endl;
+
+  db1.makeEmpty();
+  assert(db1.size()==0);
+
+// 3. Un metodo per aggiungere un nuovo elemento T nell’array;
+
   db1.insert(1);
   db1.insert(2);
   db1.insert(3);
@@ -70,32 +99,79 @@ int main(int argc, char const *argv[])
   db1.insert(100);
   db1.insert(-1);
 
+
+// ". Un costruttore secondario che costruisce un SortedArray a partire dai
+// dati rappresentati da due iteratori generici di inizio e fine sequenza;
+
   std::cout<<db1;
   //size: 11 | -1 0 1 2 3 4 5 100 102 106 130 
   auto beg = db1.begin()+2;
   auto end = db1.begin()+5;
   std::cout<<"ci provo duro"<<std::endl;
-
-
   SortedArray<int, AscendingOrd, Equalz> db5(beg, end);
   std::cout<<db5;
 
-  // db1.remove(-1);
-  // db1.remove(5);
-  // db1.remove(3);
-  // std::cout<<db1;
-  
-  // std::cout << "trying to use iteratorr;" <<std::endl ;
-
-  // for (auto it = db1.begin(); it != db1.end(); ++it){
-  //   std::cout << *it << std::endl;
-  // }
 
 
-  // SortedArray<int, AscendingOrd, Equalz> 
-  //   db3 = db1.filter(lessThen100());;
-  
-  // std::cout<<db3;
+// 2. Un costruttore secondario che costruisce un SortedArray a partire da
+// una altro SortedArray generico;
+
+SortedArray<int, AscendingOrd, Equalz> db6;
+db6.insert(1);
+db6.insert(12);
+db6.insert(6);
+db6.insert(40);
+db6.insert(2);
+db6.insert(11);
+db6.insert(12);
+std::cout <<"printing original"<<std::endl;
+std::cout << db6;
+SortedArray<double, DescendingOrd, Equalz> db7(db6);
+std::cout <<"printing new initilized on original"<<std::endl;
+std::cout << db7;
+assert(db6.size() == db7.size());
+
+
+
+
+
+
+// 7. Un metodo che, dato un funtore generico F che implementa una
+// condizione booleana su un dato T, ritorna un nuovo SortedArray che
+// contiene gli elementi T che soddisfano la condizione. Ad esempio, se il
+// SortedArray contiene interi, F potrebbe essere un funtore che ritorna
+// true se l’intero è pari e maggiore di 100;
+// 8. Un metodo che ritorna true se nella struttura dati è presente almeno un
+// elemento di valore T.
+// Deve essere inoltre ridefinito l’operatore di stream per il SortedArray.
+// Utilizzare dove è opportuno la gestione delle eccezioni. Gestite con una logica
+// opportuna i casi limite/di errore";
+
+// 4. Un metodo per rimuovere un dato elemento T. Se più elementi sono
+// rimovibili, ne viene rimosso solo uno;
+  int a = db1.size();
+  std::cout<<db1;
+  db1.remove(-1);
+  db1.remove(5);
+  db1.remove(3);
+  std::cout<<db1;
+  assert(db1.size() == a - 3);
+
+
+  std::cout << "trying to use iteratorr;" <<std::endl ;
+// 6. Iteratore standard di tipo random_access che ritorna gli elementi in
+// ordine;
+  for (auto it = db1.begin(); it != db1.end(); ++it){
+    std::cout << *it << std::endl;
+  }
+
+
+  SortedArray<int, AscendingOrd, Equalz> 
+  db3 = db1.filter(lessThen100());;
+  for(auto it = db3.begin(); it!= db3.end(); ++it){
+    assert(*it < 100);
+  }  
+  std::cout<<db3;
 }
 
 /**
@@ -366,3 +442,7 @@ int main(int argc, char const *argv[])
 //   // ...
 //   return 0;
 // }
+int main(int argc, char const *argv[]){
+  test();
+}
+

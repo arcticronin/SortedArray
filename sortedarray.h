@@ -35,13 +35,9 @@ public:
     @post _array = nullptr
     @post _size = 0
   */
-  SortedArray() : _array(nullptr), _size(0)
-  { // Initialization list
-    // I costruttori messi nella initialization list servono per
-    // inizializzare (creare + impostare un valore) i dati membro.
-    // Sono eseguiti prima di qualunque operazione interna al
-    // costruttore.
 
+  SortedArray() : _array(nullptr), _size(0)
+  {
 #ifndef NDEBUG
     std::cout << "SortedArray::SortedArray()" << std::endl;
 #endif
@@ -51,13 +47,16 @@ public:
   // dati rappresentati da due iteratori generici di inizio e fine sequenza;
   // Constructor with iterators
 
-  template <typename Iterator>
-  SortedArray(Iterator begin, Iterator end) : _array(nullptr), _size(0)
+  template <typename Iter>
+  SortedArray(Iter begin, Iter end) : _array(nullptr), _size(0)
   {
     while( begin != end){
       this->insert(*begin);
       ++begin;
     }
+#ifndef NDEBUG
+    std::cout << "SortedArray::SortedArray(Iter begin, Iter end)" << std::endl;
+#endif
   }
 
   /**
@@ -75,30 +74,6 @@ public:
     std::cout << "SortedArray::~SortedArray()" << std::endl;
 #endif
   }
-
-// TODO review
-   // Secondary constructor taking another SortedArray
-  template <typename U, typename R, typename S>
-  SortedArray(const SortedArray<U, R, S> &other) : _array(nullptr), _size(0)
-  {
-    _size = other.getSize();
-    _array = new value_type[_size];
-    try
-    {
-      for (size_type i = 0; i < _size; ++i)
-        _array[i] = static_cast<value_type>(other[i]);
-    }
-    catch (...)
-    {
-      delete[] _array;
-      _array = nullptr;
-      _size = 0;
-      throw;
-    }
-    // Implementation
-  }
-  ///// TODO review
-
   // Other member functions
 
   /**
@@ -113,7 +88,10 @@ public:
     @post _array != nullptr
     @post _size = other._size
   */
-  SortedArray(const SortedArray &other) : _array(nullptr), _size(0)
+  SortedArray(const SortedArray<value_type, 
+                              order_policy,
+                              equal_policy> &other) 
+    : _array(nullptr), _size(0)
   {
     _array = new value_type[other._size];
     _size = other._size;
@@ -134,6 +112,30 @@ public:
 #endif
   }
 
+  // Secondary constructor taking another Generic SortedArray
+  template <typename U, typename R, typename S>
+  SortedArray(const SortedArray<U, R, S> &other) : _array(nullptr), _size(0)
+  {
+    try
+    {
+      for (size_type i = 0; i < other.size(); ++i)
+        this->insert(static_cast<value_type>(other[i]));
+    }
+    catch (...)
+    {
+      delete[] _array;
+      _array = nullptr;
+      _size = 0;
+      throw;
+    }
+#ifndef NDEBUG
+std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)" 
+<< std::endl;
+#endif
+ 
+  }
+
+
   /**
     @brief Operatore di assegnamento
 
@@ -153,22 +155,17 @@ public:
   {
     if (this != &other)
     {
-
       SortedArray tmp(other);
-
       this->swap(tmp);
     }
-
 #ifndef NDEBUG
     std::cout << "SortedArray::operator=(const SortedArray &)" << std::endl;
 #endif
-
     return *this;
   }
 
   void insert(const value_type &item)
   {
-
     value_type *new_array = nullptr;
     try
     {
@@ -190,7 +187,7 @@ public:
       std::swap(_array, new_array);
       _size = 1;
       return;
-    }
+          }
 
     // copy first part
     for (int i = 0; i < index; ++i)
@@ -209,16 +206,17 @@ public:
     std::swap(new_array, _array);
     delete[] new_array;
     _size += 1;
+    
+    return;
   }
 
   void remove(const value_type &item)
   {
-
     int index = get_index_of(item);
+
     assert(index != -1);
 
     value_type *new_array = nullptr;
-
     if (_size == 1)
     {
       assert(index == 0);
@@ -254,6 +252,8 @@ public:
     std::swap(new_array, _array);
     delete[] new_array;
     _size -= 1;
+    
+    return;
   }
 
   int searchsorted(const value_type &item) const
@@ -278,6 +278,7 @@ public:
     delete[] _array;
     _array = nullptr;
     _size = 0;
+    return;
   }
 
   bool find(const value_type &target)
@@ -342,69 +343,69 @@ public:
     @return valore della cella index-esima
 
     @pre index < size()
-  */
-  value_type get_value(size_type index) const
-  {
-    assert(index < _size);
+  // */
+  // value_type get_value(size_type index) const
+  // {
+  //   assert(index < _size);
 
-    return _array[index];
-  }
+  //   return _array[index];
+  // }
 
-  /**
-    @brief Accesso ai dati in scrittura (stile Java)
+  // /**
+  //   @brief Accesso ai dati in scrittura (stile Java)
 
-    Metodo setter per scrivere un valore nella cella index-esima dell'array
+  //   Metodo setter per scrivere un valore nella cella index-esima dell'array
 
-    @param index indice della cella dell'array da scrivere
-    @param value valore da scrivere nella cella
+  //   @param index indice della cella dell'array da scrivere
+  //   @param value valore da scrivere nella cella
 
-    @pre index < size()
-  */
-  void set_value(unsigned int index, const value_type &value)
-  {
-    assert(index < _size);
+  //   @pre index < size()
+  // */
+  // void set_value(unsigned int index, const value_type &value)
+  // {
+  //   assert(index < _size);
 
-    _array[index] = value;
-  }
+  //   _array[index] = value;
+  // }
 
-  /**
-    @brief Getter/Setter della cella index-esima (stile C++)
+  // /**
+  //   @brief Getter/Setter della cella index-esima (stile C++)
 
-    Metodo che permette di leggere e/o scrivere la cella
-    index-esima dell'array
+  //   Metodo che permette di leggere e/o scrivere la cella
+  //   index-esima dell'array
 
-    @param index della cella da leggere/scrivere
+  //   @param index della cella da leggere/scrivere
 
-    @return reference alla cella index-esima
+  //   @return reference alla cella index-esima
 
-    @pre index < size()
-  */
-  value_type &value(size_type index)
-  {
-    assert(index < _size);
+  //   @pre index < size()
+  // */
+  // value_type &value(size_type index)
+  // {
+  //   assert(index < _size);
 
-    return _array[index];
-  }
+  //   return _array[index];
+  // }
 
-  /**
-    @brief Getter della cella index-esima (stile C++)
+  // /**
+  //   @brief Getter della cella index-esima (stile C++)
 
-    Metodo che permette di leggere la cella
-    index-esima dell'array. Il metodo si può usare
-    solo su istanze costanti della classe.
+  //   Metodo che permette di leggere la cella
+  //   index-esima dell'array. Il metodo si può usare
+  //   solo su istanze costanti della classe.
 
-    @param index della cella da leggere
+  //   @param index della cella da leggere
 
-    @return reference alla cella index-esima
+  //   @return reference alla cella index-esima
 
-    @pre index < size()
-  */
-  const value_type &value(size_type index) const
-  {
-    assert(index < _size);
+  //   @pre index < size()
+  // */
+  // const value_type &value(size_type index) const
+  // {
+  //   assert(index < _size);
 
-    return _array[index];
-  }
+  //   return _array[index];
+  // }
 
   /**
     @brief Getter/Setter della cella index-esima (stile op[])
@@ -417,13 +418,13 @@ public:
     @return reference alla cella index-esima
 
     @pre index < size()
-  */
-  value_type &operator[](size_type index)
-  {
-    assert(index < _size);
+  // */
+  // value_type &operator[](size_type index)
+  // {
+  //   assert(index < _size);
 
-    return _array[index];
-  }
+  //   return _array[index];
+  // }
 
   /**
     @brief Getter della cella index-esima (stile op[])
@@ -471,14 +472,14 @@ public:
   */
   // Diamo accesso alla funzione globale, esterna alla classe, alle
   // parti private della classe
-  friend std::ostream &operator<<(std::ostream &os, const SortedArray<T, P, Q> &db)
-  {
-    os << "size: " << db._size << " | ";
-    for (typename SortedArray<T, P, Q>::size_type i = 0; i < db.size(); i++)
-      os << db[i] << ' ';
-    os << std::endl;
-    return os;
-  }
+  // friend std::ostream &operator<<(std::ostream &os, const SortedArray<T, P, Q> &db)
+  // {
+  //   os << "size: " << db._size << " | ";
+  //   for (typename SortedArray<T, P, Q>::size_type i = 0; i < db.size(); i++)
+  //     os << db[i] << ' ';
+  //   os << std::endl;
+  //   return os;
+  // }
 
   // Implementazione completa di ietartori di tipo random.
   // Come si vedrà, i metodi sono solo dei wrapper a delle
@@ -661,5 +662,16 @@ private:
   value_type *_array;
   size_type _size;
 };
+
+template<typename T, typename P, typename Q>
+std::ostream& operator<<(std::ostream& os, const SortedArray<T, P, Q> array)
+{ 
+  os << "array of dim:" << array.size() << '\t' << "| ";
+  for(int i = 0; i < array.size(); i++){
+    os << array[i] << ' ';
+  }   
+  os << std::endl;
+  return os;
+}
 
 #endif
