@@ -284,7 +284,7 @@ public:
  /**
     @brief Rimozione di un elemento
     
-    Rimozione di un elemento nel SortedArray in posizione ordinata
+    Rimozione di un elemento nel SortedArray in posizione ordinata, non fa niente se non lo trova
 
     @param item reference di elemento di tipo del SortedArray 
     @return 0 if manages to remove 
@@ -297,7 +297,7 @@ public:
     int index = get_index_of(item);
 
     if(index == -1){
-      // i vhose -1 as error code
+      // I chose -1 as error code
       return -1;
       }
 
@@ -352,23 +352,43 @@ public:
     @param item reference di elemento di tipo del SortedArray 
 
     @return indice al quale si deve inserire 
-  */
-  int searchsorted(const value_type &item) const
+  
+*/
+  int searchsorted(const value_type& item) const
+{
+  order_policy ord;
+  int under = 0;
+  int upper = _size;
+
+  while (under < upper)
   {
-    order_policy ord;
-    if (_size == 0)
-    {
-      return 0;
-    }
-    for (int i = 0; i < _size; ++i)
-    {
-      if (ord(item, _array[i]))
-      {
-        return i;
-      }
-    }
-    return _size;
+    int mid = (under + upper) / 2;
+
+    if (ord(_array[mid], item))
+      under = mid + 1;
+    else
+      upper = mid;
   }
+
+  return under;
+}
+
+  // int searchsorted(const value_type &item) const
+  // {
+  //   order_policy ord;
+  //   if (_size == 0)
+  //   {
+  //     return 0;
+  //   }
+  //   for (int i = 0; i < _size; ++i)
+  //   {
+  //     if (ord(item, _array[i]))
+  //     {
+  //       return i;
+  //     }
+  //   }
+  //   return _size;
+  // }
 
  /**
     @brief makeEmpty - svuota
