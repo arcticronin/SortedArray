@@ -6,9 +6,6 @@
 #include <iterator> // std::forward_iterator_tag
 #include <cstddef>  // std::ptrdiff_t
 
-// 1-4) Throws an exception of a type that would match a handler of type std::bad_alloc on failure to allocate memory.
-// 11-22) Same as (1-4) if the function does not return on allocation failure, otherwise same as (5-8).
-
 /**
   @file SortedArray.h
   @brief Dichiarazione della classe SortedArray
@@ -33,8 +30,8 @@ template <typename T, typename P, typename Q>
 class SortedArray
 {
 public:
-  typedef T value_type;           ///< Tipo del dato dell'array
-  typedef unsigned int size_type; ///< Tipo del dato size
+  typedef T value_type;           /// Tipo del dato dell'array
+  typedef unsigned int size_type; /// Tipo del dato size
   typedef P order_policy;
   typedef Q equal_policy;
 
@@ -142,7 +139,7 @@ public:
 #endif
   }
 /**
-    @brief Costruttore da sltro gnerico Sorted Array.
+    @brief Costruttore da altro generico Sorted Array.
 
     Serve a creare un oggetto a partire da una altro generico SortedArray.
 
@@ -161,8 +158,9 @@ public:
   {
     try
     {
-      for (size_type i = 0; i < other.size(); ++i)
+      for (size_type i = 0; i < other.size(); ++i){
         this->insert(static_cast<value_type>(other[i]));
+        }
     }
     catch (...)
     {
@@ -204,6 +202,7 @@ public:
 #endif
     return *this;
   }
+
  /**
     @brief Inserimento di un elemento
     
@@ -216,9 +215,7 @@ public:
 
   void insert(const value_type &item)
   {
-    value_type *new_array = nullptr;
-
-    value_type new_array = new value_type[_size + 1];
+    value_type *new_array = new value_type[_size + 1];
 
     int index = searchsorted(item);
     // get_insert_index
@@ -244,12 +241,11 @@ public:
     {
       try
       {
-        new_array[i] = _array[i];
+       new_array[i] = _array[i];
       }
-      catch (const std::exception &e)
+      catch (...)
       {
         delete[] new_array;
-        std::cerr << e.what() << std::endl;
         throw;
       }
     }
@@ -259,10 +255,9 @@ public:
     {
       new_array[index] = item;
     }
-    catch (const std::exception &e)
+    catch (...)
     {
       delete[] new_array;
-      std::cerr << e.what() << '\n';
       throw;
     }
 
@@ -273,10 +268,9 @@ public:
       {
         new_array[i + 1] = _array[i];
       }
-      catch (const std::exception &e)
+      catch (...)
       {
         delete[] new_array;
-        std::cerr << e.what() << '\n';
         throw;
       }
     }
@@ -284,7 +278,6 @@ public:
     std::swap(new_array, _array);
     delete[] new_array;
     _size += 1;
-
     return;
   }
 
@@ -294,15 +287,19 @@ public:
     Rimozione di un elemento nel SortedArray in posizione ordinata
 
     @param item reference di elemento di tipo del SortedArray 
-
+    @return 0 if manages to remove 
+    @return -1 if it fails 
     @post _size--  
   */
-  void remove(const value_type &item)
+  int remove(const value_type &item)
   {
     // get_insert_index
     int index = get_index_of(item);
 
-    assert(index != -1);
+    if(index == -1){
+      // i vhose -1 as error code
+      return -1;
+      }
 
     value_type *new_array = nullptr;
 
@@ -310,7 +307,7 @@ public:
     {
       assert(index == 0);
       makeEmpty();
-      return;
+      return 0;
     }
 
     new_array = new value_type[_size - 1];
@@ -346,7 +343,7 @@ public:
     std::swap(new_array, _array);
     delete[] new_array;
     _size -= 1;
-    return;
+    return 0;
   }
 
  /**
@@ -406,16 +403,16 @@ public:
   }
 
 /**
-    @brief find - ricerca un elemento se presente
+    @brief Filter - filtra l'array e restituisce un altro SortedArray
     
-    Cerca un elemento nell'array e restituisce un boolean
 
-    @param filt Policy che vogliamo usare per filtrare l'array, deve restituire un bool 
-    confrontando un elemento di tipo value_type con l'operatore ()
+    @param filt Policy che vogliamo usare per filtrare l'array, una sua istanza confrontando un elemento di tipo value_type con l'operatore (), deve restituire un boolean
 
     @return SortedArray - con soli gli elementi che soddisfano il filtro 
     @ref insert
   */
+
+
   template <typename Policy>
   SortedArray filter(Policy filt)
   {
@@ -431,10 +428,9 @@ public:
         {
           result.insert(_array[i]);
         }
-        catch (const std::exception &e)
+        catch (...)
         {
           result.makeEmpty();
-          std::cerr << e.what() << '\n';
           throw;
         }
       }
@@ -488,33 +484,15 @@ public:
     std::swap(_size, other._size);
   }
 
-  /**
-    @brief ridefinizione operatore di stream
+/**
+    @brief Classe che rappresenta un iteratore di tipo random_access_iterator
 
-    Ridefinizione dell'operatore di stream per scrivere un
-    SortedArray su uno stream di output
-
-    @param os stream di output (operando di sinistra)
-    @param db SortedArray da scrivere (operando di destra)
-
-    @return reference allo stream di output
+    sfrutta la struttura della classe SortedArray per implementare un puntatore random access
+    
+    @ref SortedArray::begin()
+    @ref SortedArray::end()
   */
-  // Diamo accesso alla funzione globale, esterna alla classe, alle
-  // parti private della classe
-  // friend std::ostream &operator<<(std::ostream &os, const SortedArray<T, P, Q> &db)
-  // {
-  //   os << "size: " << db._size << " | ";
-  //   for (typename SortedArray<T, P, Q>::size_type i = 0; i < db.size(); i++)
-  //     os << db[i] << ' ';
-  //   os << std::endl;
-  //   return os;
-  // }
-
-  // Implementazione completa di ietartori di tipo random.
-  // Come si vedrà, i metodi sono solo dei wrapper a delle
-  // operazioni tra puntatori.
-
-  class iterator
+    class iterator
   {
     //
   public:
@@ -658,36 +636,42 @@ public:
     }
 
   private:
+
     T *ptr;
-
-    // La classe container deve essere messa friend dell'iteratore per poter
-    // usare il costruttore di inizializzazione.
     friend class SortedArray;
-
-    // Costruttore privato di inizializzazione usato dalla classe container
-    // tipicamente nei metodi begin e end
+    
     iterator(T *p)
     {
       ptr = p;
     }
 
-    // !!! Eventuali altri metodi privati
-
   }; // classe iterator
-
-  // Ritorna l'iteratore all'inizio della sequenza dati
+/**
+    @brief Iteratore inizio sequenza
+    
+    @return iteratore 
+    @ref iterator
+  */
   iterator begin()
   {
     return iterator(_array);
   }
 
-  // Ritorna l'iteratore alla fine della sequenza dati
+/**
+    @brief Iteratore fine sequenza
+    
+    nota: non dereferenzializzarlo : non punta a nessun valore appartenente all'array
+    
+    @return iteratore 
+    @ref iterator
+  */
   iterator end()
   {
     return iterator(_array + _size);
   }
 
 private:
+
   int get_index_of(const value_type &target)
   {
     equal_policy eq;
@@ -713,6 +697,11 @@ private:
   size_type _size;
 };
 
+/**
+    @brief Ridefinizione operatore di stream su SortedArray
+    
+    @ref SortedArray::size
+  */
 template <typename T, typename P, typename Q>
 std::ostream &operator<<(std::ostream &os, const SortedArray<T, P, Q> array)
 {
