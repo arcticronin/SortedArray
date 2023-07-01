@@ -1,11 +1,11 @@
 #ifndef DBUFFER_H
 #define DBUFFER_H
 
+
 #include <ostream> // std::ostream
 #include <cassert> 
 #include <iterator> // std::forward_iterator_tag
 #include <cstddef>  // std::ptrdiff_t
-
 /**
   @file dbuffer.h
   @brief Dichiarazione della classe dbuffer

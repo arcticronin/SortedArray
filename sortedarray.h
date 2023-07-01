@@ -6,6 +6,9 @@
 #include <iterator> // std::forward_iterator_tag
 #include <cstddef>  // std::ptrdiff_t
 
+// 1-4) Throws an exception of a type that would match a handler of type std::bad_alloc on failure to allocate memory.
+// 11-22) Same as (1-4) if the function does not return on allocation failure, otherwise same as (5-8).
+
 /**
   @file SortedArray.h
   @brief Dichiarazione della classe SortedArray
@@ -14,7 +17,17 @@
 /**
   @brief Classe SortedArray
 
-  Classe che vuole rappresentare un array dinamico di interi.
+  Classe che vuole rappresentare un array dinamico ordinato.
+  Classe Template, con 3 parametri Template
+  
+  Supporta iteratore random access
+
+  Lista parametri template:
+  @param T Tipo dei dati da inserire nel container
+  @param P Policy per il confronto e ordinamento degli elementi
+  @param Q Policy di uguaglianza
+
+
 */
 template <typename T, typename P, typename Q>
 class SortedArray
@@ -28,7 +41,6 @@ public:
   /**
     @brief Costruttore di default
 
-    1° MEtodo FONDAMENTALE: COSTRUTTORE DI DEFAULT
     Il cosruttore di default serve a inizializzare i dati membro
     per rappresentare un SortedArray vuoto
 
@@ -43,29 +55,13 @@ public:
 #endif
   }
 
-  //   1. Un costruttore secondario che costruisce un SortedArray a partire dai
-  // dati rappresentati da due iteratori generici di inizio e fine sequenza;
-  // Constructor with iterators
-
-  template <typename Iter>
-  SortedArray(Iter begin, Iter end) : _array(nullptr), _size(0)
-  {
-    while( begin != end){
-      this->insert(*begin);
-      ++begin;
-    }
-#ifndef NDEBUG
-    std::cout << "SortedArray::SortedArray(Iter begin, Iter end)" << std::endl;
-#endif
-  }
-
   /**
     @brief Distruttore
 
-    2° MEtodo FONDAMENTALE: DISTRUTTORE
     Distruttore della classe. Il distruttore deve rimuovere tutte
     le risorse usate dalla classe. In questo caso l'array allocato
     sullo heap deve essere deallocato.
+    Si rimanda a @ref makeEmpty()
   */
   ~SortedArray()
   {
@@ -79,7 +75,6 @@ public:
   /**
     @brief Copy Constructor
 
-    3° MEtodo FONDAMENTALE: COPY CONSTRUCTOR
     Costruttore di copia. Serve a creare un oggetto come copia di un
     altro oggetto. I due oggetti devono essere indipendenti.
 
@@ -88,23 +83,24 @@ public:
     @post _array != nullptr
     @post _size = other._size
   */
-  SortedArray(const SortedArray<value_type, 
-                              order_policy,
-                              equal_policy> &other) 
-    : _array(nullptr), _size(0)
+  SortedArray(const SortedArray<value_type,
+                                order_policy,
+                                equal_policy> &other)
+      : _array(nullptr), _size(0)
   {
+
     _array = new value_type[other._size];
+
     _size = other._size;
+
     try
-    { // TODO riportare questo in TUTTE LE FUNZIONI
+    {
       for (size_type i = 0; i < _size; ++i)
         _array[i] = other._array[i];
     }
     catch (...)
     {
-      delete[] _array;
-      _array = nullptr;
-      _size = 0;
+      makeEmpty();
       throw;
     }
 #ifndef NDEBUG
@@ -112,7 +108,54 @@ public:
 #endif
   }
 
-  // Secondary constructor taking another Generic SortedArray
+/**
+    @brief Costruttore da iteratori
+
+    Serve a creare un oggetto a partire da una coppia di iteratori.
+    Gli iteratori sono di tipo sconosciuto, uso solamente l'operazione ++
+    comune a tutti.
+
+    @param begin Iter di inizio seq
+    @param end iteratore di fine seq
+
+    @post _array != nullptr
+    @post _size = diff(end, begin)
+  */
+  template <typename Iter>
+  SortedArray(Iter begin, Iter end) : _array(nullptr), _size(0)
+  {
+    while (begin != end)
+    {
+      try
+      {
+        this->insert(static_cast<value_type>(*begin));
+      }
+      catch (...)
+      {
+        makeEmpty();
+        throw;
+      }
+      ++begin;
+    }
+#ifndef NDEBUG
+    std::cout << "SortedArray::SortedArray(Iter begin, Iter end)" << std::endl;
+#endif
+  }
+/**
+    @brief Costruttore da sltro gnerico Sorted Array.
+
+    Serve a creare un oggetto a partire da una altro generico SortedArray.
+
+
+    @param begin Iter di inizio seq
+    @param end iteratore di fine seq
+
+    @post _array != nullptr
+    @post _size = other.size
+    
+    @ref insert()
+  */
+
   template <typename U, typename R, typename S>
   SortedArray(const SortedArray<U, R, S> &other) : _array(nullptr), _size(0)
   {
@@ -123,35 +166,33 @@ public:
     }
     catch (...)
     {
-      delete[] _array;
-      _array = nullptr;
-      _size = 0;
+      makeEmpty();
       throw;
     }
 #ifndef NDEBUG
-std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)" 
-<< std::endl;
+    std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
+              << std::endl;
 #endif
- 
   }
-
 
   /**
     @brief Operatore di assegnamento
 
-    4° Metodo FONDAMENTALE: OPERATORE ASSEGNAMENTO
+    OPERATORE ASSEGNAMENTO
     L'operatore di assegnamento serve a copiare il contenuto di un oggetto
     in un altro oggetto dello stesso tipo. I due oggetti devono essere
     indipendenti.
 
-    @param other SortedArray sorgenete da copiare
+    @param other SortedArray sorgente da copiare
 
-    @return un reference all'oggetto corrente
+    @return reference all'oggetto corrente
 
     @post _SortedArray != nullptr
     @post _size = other._size
   */
-  SortedArray &operator=(const SortedArray &other)
+  SortedArray &operator=(const SortedArray<value_type,
+                                           order_policy,
+                                           equal_policy> &other)
   {
     if (this != &other)
     {
@@ -163,99 +204,158 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
 #endif
     return *this;
   }
+ /**
+    @brief Inserimento di un elemento
+    
+    Inserimento di un elemento nel SortedArray in posizione ordinata
+
+    @param item reference di elemento di tipo del SortedArray 
+
+    @post _size++  
+  */
 
   void insert(const value_type &item)
   {
     value_type *new_array = nullptr;
-    try
-    {
-      new_array = new value_type[_size + 1];
-    }
-    catch (...)
-    {
-      throw;
-      // return;
-    }
+
+    value_type new_array = new value_type[_size + 1];
 
     int index = searchsorted(item);
     // get_insert_index
 
-    // TODO check se può fallire
     if (_array == nullptr)
     {
-      new_array[0] = item;
+      try
+      {
+        new_array[0] = item;
+      }
+      catch (...)
+      {
+        delete[] new_array;
+        throw;
+      }
       std::swap(_array, new_array);
       _size = 1;
       return;
-          }
+    }
 
     // copy first part
     for (int i = 0; i < index; ++i)
     {
-      new_array[i] = _array[i];
+      try
+      {
+        new_array[i] = _array[i];
+      }
+      catch (const std::exception &e)
+      {
+        delete[] new_array;
+        std::cerr << e.what() << std::endl;
+        throw;
+      }
     }
 
     // insert
-    new_array[index] = item;
+    try
+    {
+      new_array[index] = item;
+    }
+    catch (const std::exception &e)
+    {
+      delete[] new_array;
+      std::cerr << e.what() << '\n';
+      throw;
+    }
 
     // copy second part
     for (int i = index; i < _size; i++)
     {
-      new_array[i + 1] = _array[i];
+      try
+      {
+        new_array[i + 1] = _array[i];
+      }
+      catch (const std::exception &e)
+      {
+        delete[] new_array;
+        std::cerr << e.what() << '\n';
+        throw;
+      }
     }
+    
     std::swap(new_array, _array);
     delete[] new_array;
     _size += 1;
-    
+
     return;
   }
 
+ /**
+    @brief Rimozione di un elemento
+    
+    Rimozione di un elemento nel SortedArray in posizione ordinata
+
+    @param item reference di elemento di tipo del SortedArray 
+
+    @post _size--  
+  */
   void remove(const value_type &item)
   {
+    // get_insert_index
     int index = get_index_of(item);
 
     assert(index != -1);
 
     value_type *new_array = nullptr;
+
     if (_size == 1)
     {
       assert(index == 0);
-      std::swap(_array, new_array);
-      delete[] new_array;
-      _size = 0;
+      makeEmpty();
       return;
     }
 
-    try
-    {
-      new_array = new value_type[_size - 1];
-    }
-    catch (...)
-    {
-      throw;
-      // return;
-    }
-    // get_insert_index
+    new_array = new value_type[_size - 1];
 
-    // TODO check se può fallire
     // copy first part
     for (int i = 0; i < index; ++i)
     {
-      new_array[i] = _array[i];
+      try
+      {
+        new_array[i] = _array[i];
+      }
+      catch (...)
+      {
+        delete[] new_array;
+        throw;
+      }
     }
 
     // copy second part skipping index
     for (int i = index; i < _size - 1; i++)
     {
-      new_array[i] = _array[i + 1];
+      try
+      {
+        new_array[i] = _array[i + 1];
+      }
+      catch (...)
+      {
+        delete[] new_array;
+        throw;
+      }
     }
+
     std::swap(new_array, _array);
     delete[] new_array;
     _size -= 1;
-    
     return;
   }
 
+ /**
+    @brief Searchsorted, ritorna indice al quale inserire per mantenere ordine
+    
+    @param item reference di elemento di tipo del SortedArray 
+
+    @return indice al quale si deve inserire 
+  */
   int searchsorted(const value_type &item) const
   {
     order_policy ord;
@@ -273,6 +373,15 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
     return _size;
   }
 
+ /**
+    @brief makeEmpty - svuota
+    
+    Funzione che svuota array e inizializza a zero la struttura dati occupandosi della memoria
+
+
+    @post _size = 0
+    @post _array = nullptr  
+  */
   void makeEmpty()
   {
     delete[] _array;
@@ -281,33 +390,34 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
     return;
   }
 
+ /**
+    @brief find - ricerca un elemento se presente
+    
+    Inserimento di un elemento nel SortedArray in posizione ordinata
+
+    @param item reference di elemento di tipo del SortedArray 
+
+    @return 1, trovato, 
+    @return 0, non trovato  
+  */
   bool find(const value_type &target)
   {
     return (get_index_of(target) != -1);
   }
 
-  int get_index_of(const value_type &target)
-  {
-    equal_policy eq;
-    order_policy ord;
+/**
+    @brief find - ricerca un elemento se presente
+    
+    Cerca un elemento nell'array e restituisce un boolean
 
-    for (int i = 0; i < _size; ++i)
-    {
-      if (eq(target, _array[i]))
-      {
-        return i;
-      }
-      else if (ord(target, _array[i]))
-      {
-        std::cout << "cutting prematurely" << std::endl;
-        return -1;
-      }
-    }
-    return -1;
-  }
+    @param filt Policy che vogliamo usare per filtrare l'array, deve restituire un bool 
+    confrontando un elemento di tipo value_type con l'operatore ()
 
-  template <typename Filter>
-  SortedArray filter(Filter filter)
+    @return SortedArray - con soli gli elementi che soddisfano il filtro 
+    @ref insert
+  */
+  template <typename Policy>
+  SortedArray filter(Policy filt)
   {
     // init things
     SortedArray<value_type, order_policy, equal_policy> result;
@@ -315,16 +425,27 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
     // reverse to have better insert time
     for (int i = _size - 1; i >= 0; --i)
     {
-      if (filter(_array[i]))
-        result.insert(_array[i]);
+      if (filt(_array[i]))
+      {
+        try
+        {
+          result.insert(_array[i]);
+        }
+        catch (const std::exception &e)
+        {
+          result.makeEmpty();
+          std::cerr << e.what() << '\n';
+          throw;
+        }
+      }
     }
     return result;
   }
 
   /**
-    @brief Accesso alla dimensione dell'array (stile C++)
+    @brief Accesso alla dimensione dell'array
 
-    Metodo per ottenere la dimensione dell'array dinamico
+    Metodo per ottenere la dimensione dell'array
 
     @return dimensione dell'array dinamico
   */
@@ -333,101 +454,9 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
     return _size;
   }
 
-  /**
-    @brief Accesso ai dati in lettura (stile Java)
-
-    Metodo getter per leggere il valore index-esimo dell'array
-
-    @param index indice della cella dell'array da leggere
-
-    @return valore della cella index-esima
-
-    @pre index < size()
-  // */
-  // value_type get_value(size_type index) const
-  // {
-  //   assert(index < _size);
-
-  //   return _array[index];
-  // }
-
-  // /**
-  //   @brief Accesso ai dati in scrittura (stile Java)
-
-  //   Metodo setter per scrivere un valore nella cella index-esima dell'array
-
-  //   @param index indice della cella dell'array da scrivere
-  //   @param value valore da scrivere nella cella
-
-  //   @pre index < size()
-  // */
-  // void set_value(unsigned int index, const value_type &value)
-  // {
-  //   assert(index < _size);
-
-  //   _array[index] = value;
-  // }
-
-  // /**
-  //   @brief Getter/Setter della cella index-esima (stile C++)
-
-  //   Metodo che permette di leggere e/o scrivere la cella
-  //   index-esima dell'array
-
-  //   @param index della cella da leggere/scrivere
-
-  //   @return reference alla cella index-esima
-
-  //   @pre index < size()
-  // */
-  // value_type &value(size_type index)
-  // {
-  //   assert(index < _size);
-
-  //   return _array[index];
-  // }
-
-  // /**
-  //   @brief Getter della cella index-esima (stile C++)
-
-  //   Metodo che permette di leggere la cella
-  //   index-esima dell'array. Il metodo si può usare
-  //   solo su istanze costanti della classe.
-
-  //   @param index della cella da leggere
-
-  //   @return reference alla cella index-esima
-
-  //   @pre index < size()
-  // */
-  // const value_type &value(size_type index) const
-  // {
-  //   assert(index < _size);
-
-  //   return _array[index];
-  // }
 
   /**
-    @brief Getter/Setter della cella index-esima (stile op[])
-
-    Metodo che permette di leggere e/o scrivere la cella
-    index-esima dell'array
-
-    @param index della cella da leggere/scrivere
-
-    @return reference alla cella index-esima
-
-    @pre index < size()
-  // */
-  // value_type &operator[](size_type index)
-  // {
-  //   assert(index < _size);
-
-  //   return _array[index];
-  // }
-
-  /**
-    @brief Getter della cella index-esima (stile op[])
+    @brief Getter della cella index-esima
 
     Metodo che permette di leggere la cella
     index-esima dell'array. Il metodo si può usare
@@ -442,7 +471,7 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
   const value_type &operator[](size_type index) const
   {
     assert(index < _size);
-
+    
     return _array[index];
   }
 
@@ -659,17 +688,39 @@ std::cout << "SortedArray::SortedArray(const SortedArray<U, R, S> &other)"
   }
 
 private:
+  int get_index_of(const value_type &target)
+  {
+    equal_policy eq;
+    order_policy ord;
+
+    for (int i = 0; i < _size; ++i)
+    {
+      if (eq(target, _array[i]))
+      {
+        return i;
+      }
+      else if (ord(target, _array[i]))
+      {
+        std::cout << "cutting prematurely" << std::endl;
+        return -1;
+      }
+    }
+    return -1;
+  }
+
+private:
   value_type *_array;
   size_type _size;
 };
 
-template<typename T, typename P, typename Q>
-std::ostream& operator<<(std::ostream& os, const SortedArray<T, P, Q> array)
-{ 
+template <typename T, typename P, typename Q>
+std::ostream &operator<<(std::ostream &os, const SortedArray<T, P, Q> array)
+{
   os << "array of dim:" << array.size() << '\t' << "| ";
-  for(int i = 0; i < array.size(); i++){
+  for (int i = 0; i < array.size(); i++)
+  {
     os << array[i] << ' ';
-  }   
+  }
   os << std::endl;
   return os;
 }
