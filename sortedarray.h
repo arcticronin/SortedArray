@@ -417,7 +417,7 @@ public:
     @return 1, trovato, 
     @return 0, non trovato  
   */
-  bool find(const value_type &target)
+  bool find(const value_type &target) const
   {
     return (get_index_of(target) != -1);
   }
@@ -434,7 +434,7 @@ public:
 
 
   template <typename Policy>
-  SortedArray filter(Policy filt)
+  SortedArray filter(Policy filt) const
   {
     // init things
     SortedArray<value_type, order_policy, equal_policy> result;
@@ -692,7 +692,7 @@ public:
 
 private:
 
-  int get_index_of(const value_type &target)
+  int get_index_of(const value_type &target) const
   {
     equal_policy eq;
     order_policy ord;
